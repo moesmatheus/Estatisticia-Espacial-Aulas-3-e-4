@@ -1,0 +1,1 @@
+# Projeto da Disciplina de Estatística Espacial do MBA de Big Data da FGV

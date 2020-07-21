@@ -1,0 +1,7 @@
+Id_, Areap: Código da área censitária
+Distrito, Coddistr: Código do distrito
+Recnum: número sequencial identificador das áreas
+Mor_dom: número médio de moradores por domicílio da área
+Renda: renda média domiciliar da área (em R$)
+Critbras: pontuação média do Critério Brasil de Classificação Econômica da área
+Energia: consumo médio residencial de energia da área (em kWh)
