@@ -1,24 +1,24 @@
 ## Arquivo: MODELOS SAR E GWR_final.R
 
 #############################################
-#### Estatística Espacial                ####
+#### Estat?stica Espacial                ####
 #### FGV Management - 1o Sem 2020        ####
 #### Eduardo de Rezende Francisco        ####
 #############################################
 
 #############################################################################
-###      EXPLORAÇÃO DE MODELOS DE REGRESSÃO ESPACIAL (SAR E GWR) NO R     ###
+###      EXPLORA??O DE MODELOS DE REGRESS?O ESPACIAL (SAR E GWR) NO R     ###
 ###                                                                       ###
-###### Códigos baseados na Tese de Doutorado de                           ###
+###### C?digos baseados na Tese de Doutorado de                           ###
 ###### Eduardo de Rezende Francisco - FGV-EAESP - Abril/2010 :            ###
 #############################################################################
 ##         INDICADORES DE RENDA BASEADOS EM CONSUMO DE ENERGIA             ##
-##             ELÉTRICA: ABORDAGENS DOMICILIAR E REGIONAL                  ##
-##               NA PERSPECTIVA DA ESTATÍSTICA ESPACIAL                    ##
+##             EL?TRICA: ABORDAGENS DOMICILIAR E REGIONAL                  ##
+##               NA PERSPECTIVA DA ESTAT?STICA ESPACIAL                    ##
 #############################################################################
 
 ## Limpa o workspace
-## (libera memória de eventuais objetos manipulados antes)
+## (libera mem?ria de eventuais objetos manipulados antes)
 rm(list=ls())
 
 # load MAPTOOLS, SPGWR and SPDEP packages (extensions) in R environment
@@ -33,7 +33,7 @@ setwd("C:/temp")
 # Source file: AREAP_SP.CSV (456 Weighted Areas in Sao Paulo City)
 # "ap" is the variable that points to the input table
 # (ap is the abbreviation of weighted areas in Portuguese)
-ap <- read.csv("areacens_sp.csv")
+ap <- read.csv("Tutoriais/areacens_sp/areacens_sp.csv")
 
 # select some columns (5) in the input table and still point to ap
 ap <- as.data.frame(cbind(ap$ID,ap$RENDA,ap$ENERGIA,ap$XCENTR,ap$YCENTR))
@@ -41,9 +41,9 @@ ap <- as.data.frame(cbind(ap$ID,ap$RENDA,ap$ENERGIA,ap$XCENTR,ap$YCENTR))
 # rename these 5 columns
 colnames(ap) <- c("ID","Income","Energy","X","Y")
 
-# Map of São Paulo's weighted areas
+# Map of S?o Paulo's weighted areas
 #poligonos <- readShapePoly("areacens_sp.shp")
-poligonos <- rgdal::readOGR(dsn="c:/temp",layer="areacens_sp")
+poligonos <- rgdal::readOGR(dsn="Tutoriais/areacens_sp",layer="areacens_sp")
 plot(poligonos)
 
 # calculate global residual SST (SQT)
@@ -51,7 +51,7 @@ SST <- sum((ap$Income - mean(ap$Income))^2)
 
 
 ############################################################################
-## REGRESSÃO LINEAR SIMPLES ################################################
+## REGRESS?O LINEAR SIMPLES ################################################
 ############################################################################
 
 # "lm" is the function used to fit linear models
@@ -80,8 +80,15 @@ coords <- cbind(ap$X,ap$Y)
 colnames(coords) <- c("X","Y")
 
 # Calcula largura de banda (em % de registros)
-bwGauss <- gwr.sel(Income~Energy,data=ap,coords=coords,adapt=TRUE,method="aic",
-                   gweight=gwr.Gauss,verbose=FALSE)
+bwGauss <- gwr.sel(
+  Income~Energy,
+  data=ap,
+  coords=coords,
+  adapt=TRUE,
+  method="aic",
+  gweight=gwr.Gauss,
+  verbose=FALSE
+  )
 
 # Aplica GWR
 # "gwr" is the function that implements GWR in R
@@ -90,8 +97,17 @@ bwGauss <- gwr.sel(Income~Energy,data=ap,coords=coords,adapt=TRUE,method="aic",
 # adapt: if NULL the kernel is in "Fixed" type (bandwidth is in distance)
 #   if between 0 and 1 is the bandwidth for "Adapt" (k nearest neighbours)
 # hatmatrix: if TRUE, return the hatmatrix as a component of the result
-gwr.ap <- gwr(Income ~ Energy,data=ap,coords=coords,bandwidth=bwGauss,
-              gweight=gwr.Gauss,adapt=bwGauss,hatmatrix=TRUE)
+
+gwr.ap <- gwr(
+  Income ~ Energy,
+  data=ap,
+  coords=coords,
+  bandwidth=bwGauss,
+  gweight=gwr.Gauss,
+  adapt=bwGauss,
+  hatmatrix=TRUE
+  )
+
 gwr.ap
  
 GWR_SSE <- gwr.ap$results$rss
@@ -107,12 +123,23 @@ kGauss <- round(bwGauss * length(ap[,1]))
  
 # create spatial weights using k nearest neighbours (knearneigh command)
 # and convert to a W matrix style (knn2nb and nb2listw commands)
-myknn <- knearneigh(coords,k=kGauss,longlat=FALSE,RANN=FALSE)
+myknn <- knearneigh(
+      coords,
+      k=kGauss,
+      longlat=FALSE,
+      RANN=FALSE
+    )
+
 mynb <- knn2nb(myknn,sym=TRUE)
 mylistw <- nb2listw(mynb,style="W")
 
 # "lagsarlm" is the function that implements SAR Lag model in R
-sar.ap <- lagsarlm(Income ~ Energy,data=ap,mylistw,method="Matrix")
+sar.ap <- lagsarlm(
+  Income ~ Energy,
+  data=ap,
+  mylistw,
+  method="Matrix"
+  )
   
 # store RSS and R2 of the SAR lag model
 SARk_SSE <- sar.ap$SSE
@@ -131,7 +158,12 @@ mynb <- poly2nb(poligonos)
 mylistw <- nb2listw(mynb,style="W")
 
 # "lagsarlm" is the function that implements SAR Lag model in R
-sar.ap <- lagsarlm(Income ~ Energy,data=ap,mylistw,method="Matrix")
+sar.ap <- lagsarlm(
+  Income ~ Energy,
+  data=ap,
+  mylistw,
+  method="Matrix"
+  )
   
 # store RSS and R2 of the SAR lag model
 SAR_SSE <- sar.ap$SSE
@@ -150,7 +182,7 @@ ParIntercepto <- numeric()
 ParEnergia <- numeric()
 r2_local <- numeric()
 
-# considera a vizinhança de 1a ordem para a criação da lista de vizinhos
+# considera a vizinhan?a de 1a ordem para a cria??o da lista de vizinhos
 mynb <- poly2nb(poligonos)
 
 for (i in 1:length(ap[,1]))
@@ -161,10 +193,10 @@ for (i in 1:length(ap[,1]))
     next
   }
 
-  # seleciona e ordena os índices dos polígonos vizinhos de i
+  # seleciona e ordena os ?ndices dos pol?gonos vizinhos de i
   vizinhos_i <- sort(c(i,mynb[[i]]))
 
-  # seleciona o slot "polygons" (lista de polígonos) dos vizinhos de i
+  # seleciona o slot "polygons" (lista de pol?gonos) dos vizinhos de i
   listapoly_vizinhos_i <- slot(poligonos,"polygons")
   poligonos_i <- subset(listapoly_vizinhos_i, ap[,1] %in% vizinhos_i)
 

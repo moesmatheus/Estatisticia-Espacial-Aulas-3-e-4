@@ -1,16 +1,16 @@
 ## Arquivo: EXEMPLO_RGDAL.R
 
 ##############################################
-#### GeoAnálise e Estatística Espacial    ####
+#### GeoAn?lise e Estat?stica Espacial    ####
 #### FGV Management - 1o Sem 2020         ####
 #### Eduardo de Rezende Francisco         ####
 ##############################################
 
 ########################################################################
-###      Exemplo de Exploração de Mapas com a extensão RGDAL         ###
+###      Exemplo de Explora??o de Mapas com a extens?o RGDAL         ###
 ########################################################################
 
-# carrega a extensão RGDAL
+# carrega a extens?o RGDAL
 
 #install.packages("maptools")
 #require(maptools)
@@ -19,12 +19,12 @@ require(rgdal)
 
 # carrega o shapefile AREACENS.SHP
 
-# método anterior, baseado no package "mapping"
+# m?todo anterior, baseado no package "mapping"
 # ac <- readShapePoly("c:/temp/areacens_sp.shp")
 
-# método baseado no package rgdal
+# m?todo baseado no package rgdal
 #dsn <- system.file("c:/temp/areacens_sp.shp", package = "rgdal")[1]
-ac <- rgdal::readOGR(dsn="c:/temp",layer="areacens_sp")
+ac <- rgdal::readOGR(dsn="Tutoriais/areacens_sp",layer="areacens_sp")
 plot(ac)
 
 # seleciona as Ã¡reas com renda mÃ©dia menor ou igual a R$ 1000

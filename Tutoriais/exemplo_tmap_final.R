@@ -1,13 +1,13 @@
 # Arquivo: EXEMPLO_TMAP_FINAL.R
 
 ##############################################
-#### GeoAnálise e Estatística Espacial    ####
+#### GeoAn?lise e Estat?stica Espacial    ####
 #### FGV Management - 1o Sem 2020         ####
 #### Eduardo de Rezende Francisco         ####
 ##############################################
 
 ################################################
-###      Exemplo de Uso da Extensão tmap     ###
+###      Exemplo de Uso da Extens?o tmap     ###
 ################################################
 
 #install.packages("rgdal")
@@ -20,9 +20,9 @@ require(shinyjs)
 require(tmaptools)
 
 # carrega o shapefile AREACENS.SHP
-ac <- rgdal::readOGR(dsn="c:/temp",layer="areacens_sp")
+ac <- rgdal::readOGR(dsn="Tutoriais/areacens_sp",layer="areacens_sp")
 
-# explora a extensão tmap
+# explora a extens?o tmap
 qtm(ac)
 
 # mapa de renda
@@ -41,7 +41,7 @@ qtm(ac, fill="ENERGIA", fill.n=10,
 # carrega o shapefile DISTRITOS
 distritos <- rgdal::readOGR(dsn="c:/temp",layer="distritos_sp")
 
-# mapa coroplético estilo atlas escolar
+# mapa coropl?tico estilo atlas escolar
 qtm(distritos, fill="MAP_COLORS", legend.show=FALSE)
 
 #mapas mais divertidos

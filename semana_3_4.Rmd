@@ -1,0 +1,221 @@
+---
+title: "Estatística Espacial"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r bibliotecas, echo=T, results="hide", warning=FALSE, error=FALSE, message=FALSE}
+library(rgdal)
+require(tmap)
+library(spgwr)
+library(spdep)
+library(spatialreg)
+```
+
+## Carregando dados
+```{r dados, warning=FALSE, error=FALSE}
+mg = rgdal::readOGR(dsn="crime_mg",layer="crime_mg")
+
+mg$POP_RUR=as.numeric(mg$POP_RUR)
+mg$POP_URB=as.numeric(mg$POP_URB)
+mg$POP_FEM=as.numeric(mg$POP_FEM)
+mg$POP_MAS=as.numeric(mg$POP_MAS)
+mg$POP_TOT=as.numeric(mg$POP_TOT)
+```
+
+## Tarefa 1
+
+**Produza um mapa de alta qualidade do shapefile crime_mg utilizando a extensão tmap. Apresente o código completo e o mapa produzido em sua resposta.**
+
+```{r mapa, warning=FALSE}
+qtm(mg, fill="INDICE95", fill.n=10,
+    fill.title="INDICE95", fill.style="quantile")
+```
+
+## Pergunta 2
+
+**Qual das variáveis quantitativas apresentadas no shapefile crime_mg apresenta maior auto-correlação espacial? Descreva como implementou a matriz de vizinhança. Apresente o I de Moran e o mapa de auto-correlação espacial local (LISA map) da variável escolhida e também de pelo menos outras 3 variáveis.**
+
+A variável de maior auto-correlação espacial é AREA (I = 0.551), seguida por INDICE94 (I = 0.316) e INDICE95 (I = 0.303). 
+```{r moranI}
+# Construir lista de vizinhos
+sids_nbq <- poly2nb(mg, queen = TRUE)
+
+# Criar matriz de pesos
+sids_nbq_w <- nb2listw(sids_nbq)
+
+moran.test(mg$AREA, listw = sids_nbq_w)
+moran.test(mg$INDICE94, listw = sids_nbq_w)
+moran.test(mg$INDICE95, listw = sids_nbq_w)
+moran.test(mg$GINI_91, listw = sids_nbq_w)
+moran.test(mg$POP_94, listw = sids_nbq_w)
+moran.test(mg$POP_RUR, listw = sids_nbq_w)
+moran.test(mg$POP_URB, listw = sids_nbq_w)
+moran.test(mg$POP_FEM, listw = sids_nbq_w)
+moran.test(mg$POP_MAS, listw = sids_nbq_w)
+moran.test(mg$POP_TOT, listw = sids_nbq_w)
+moran.test(mg$URBLEVEL, listw = sids_nbq_w)
+moran.test(mg$PIB_PC, listw = sids_nbq_w)
+```
+
+```{r moranPlot}
+moran.plot(
+  mg$AREA, 
+  sids_nbq_w,
+  labels=as.character(mg$ID)
+  )
+```
+
+```{r LISA}
+# Set the breaks for the thematic map classes
+breaks <- seq(1, 5, 1)
+
+# Set the corresponding labels for the thematic map classes
+labels <- c("high-High", "low-Low", "High-Low", "Low-High", "Not Signif.")
+
+# see ?findInterval - This is necessary for making a map
+np <- findInterval(mg$INDICE94, breaks)
+
+# Assign colors to each map class
+colors <- c("red", "blue", "lightpink", "skyblue2", "white")
+plot(mg, col = colors[np])  #colors[np] manually sets the color for each county
+mtext("Local Moran's I", cex = 1.5, side = 3, line = 1)
+legend("topleft", legend = labels, fill = colors, bty = "n")
+```
+
+## Pergunta 3
+
+**Implemente o modelo espacial auto-regressivo (SAR) da variável Indice95 (índice de criminalidade em 1995 de Minas Gerais) a partir de apenas uma variável independente (não pode ser Indice94, Codmuni, ID, X_coord nem Y_coord). Apresente o resultado da regressão linear simples e da regressão linear espacial. Apresente as equações e interprete seus coeficientes. Indique como criou a matriz de vizinhança.**
+
+Regressão Linear
+```{r RegLin}
+lm.mg <- lm(INDICE95 ~ AREA,data=mg)
+lm.mg
+summary(lm.mg)
+```
+
+Rergressão SAR
+```{r SAR}
+# Construir lista de vizinhos
+sids_nbq <- poly2nb(mg, queen = TRUE)
+
+# Criar matriz de pesos
+sids_nbq_w <- nb2listw(sids_nbq)
+
+sar.mg <- lagsarlm(
+  INDICE95 ~ AREA,
+  data=mg,
+  sids_nbq_w,
+  method="Matrix"
+  )
+
+summary(sar.mg)
+
+SAR_SSE <- sar.mg$SSE
+SST <- sum((mg$INDICE95 - mean(mg$INDICE95))^2)
+r2_SAR <- 1 - (SAR_SSE/SST)
+r2_SAR
+```
+
+## Pergunta 4
+
+**Para essa variável que você escolheu, o modelo espacial SAR apresentou ganhos significantes com relação ao modelo linear simples? Justifique sua resposta.**
+```{r}
+
+
+```
+## Pergunta 5
+
+**Implemente a regressão espacial GWR da variável Indice95 (índice de criminalidade em 1995 de Minas Gerais) a partir de apenas uma variável independente (não pode ser Indice94, Codmuni, ID, X_coord nem Y_coord). Apresente o resultado da regressão linear simples e da regressão linear espacial por GWR. Apresente medidas da distribuição dos coeficientes (min, Q1, Q2, Q3, máx), e da distribuição do R2 (min, Q1, Q2, Q3, máx) e apresente os resultados globais da regressão (R2 global, basicamente). Destaque a estratégia utilizada para a construção do kernel (fixo ou adaptativo, vizinhança, etc).**
+```{r GWR}
+bwGauss = gwr.sel(
+  INDICE95 ~ AREA,
+  data=mg,
+  adapt=TRUE,
+  method="aic",
+  gweight=gwr.Gauss,
+  verbose=FALSE
+  )
+
+gwr.ap = gwr( 
+  INDICE95 ~ AREA,
+  data = mg,
+  bandwidth=bwGauss,
+  gweight=gwr.Gauss,
+  adapt=bwGauss,
+  hatmatrix=TRUE
+  )
+
+gwr.ap
+ 
+GWR_SSE <- gwr.ap$results$rss
+r2_GWR <- 1 - (GWR_SSE/SST)
+r2_GWR
+```
+## Pergunta 6
+
+**Para essa variável que você escolheu, o modelo espacial GWR apresentou ganhos significantes com relação ao modelo linear simples? Justifique sua resposta.**
+```{r}
+
+```
+## Pergunta 7
+
+**Implemente um modelo de regressão linear multivariado stepwise da variável Indice95 (significante a 5% ou 10%, utilize o que achar melhor). Depois, “promova-o” a um modelo SAR. Indique como criou a matriz de vizinhança. Apresente os resultados comparados (equação, R2). Qual modelo você escolheria como final? Se desejar, apresente mapas que sustente sua justificativa.**
+```{r SARstep}
+lm.mg <- lm(
+  INDICE95 ~ AREA + GINI_91 + POP_94 + POP_RUR + POP_URB + POP_FEM + URBLEVEL + PIB_PC ,
+  data=mg
+  )
+
+lm.step = step(lm.mg)
+
+summary(lm.step)
+
+sar.mg <- lagsarlm(
+  lm.step,
+  data=mg,
+  sids_nbq_w,
+  method="Matrix"
+  )
+
+summary(sar.mg)
+
+SAR_SSE <- sar.mg$SSE
+r2_SAR <- 1 - (SAR_SSE/SST)
+r2_SAR
+```
+## Pergunta 8 (bônus)
+
+**Promova o modelo final linear da Pergunta 6 a um modelo GWR. Apresente os resultados comparados (equação, R2). Qual modelo você escolheria como final? Se desejar, apresente mapas que sustente sua justificativa. Destaque a estratégia utilizada para a construção do kernel (fixo ou adaptativo, vizinhança, etc).**
+```{r GWRstep}
+bwGauss = gwr.sel(
+  lm.step,
+  data=mg,
+  adapt=TRUE,
+  method="aic",
+  gweight=gwr.Gauss,
+  verbose=FALSE
+  )
+
+gwr.ap = gwr( 
+  lm.step,
+  data = mg,
+  bandwidth=bwGauss,
+  gweight=gwr.Gauss,
+  adapt=bwGauss,
+  hatmatrix=TRUE
+  )
+
+gwr.ap
+ 
+GWR_SSE <- gwr.ap$results$rss
+r2_GWR <- 1 - (GWR_SSE/SST)
+r2_GWR
+```
+
+
+
+
+
